@@ -238,8 +238,9 @@ The repo now has a Loom setup (`build.gradle`, wrapper, `src/main/resources` wit
 ```
 
 Versions are in `gradle.properties` (MC 1.21.1, Yarn `1.21.1+build.3`, Loom 1.9.2, Fabric API `0.116.9+1.21.1`,
-Gradle 8.14.3, Java 21). Two access-widener entries from the original jar (`method_4212`, `method_4217` on
-`PlayerEntityRenderer`) don't exist in 1.21.1 and were dropped. Four mixins exist in the sources but are not listed
+Gradle 8.14.3, Java 21). The access widener was remapped from intermediary to Yarn; the two `PlayerEntityRenderer` overrides
+(`setupTransforms`, `scale`) are written out by name because Yarn only names them on `LivingEntityRenderer`.
+Four mixins exist in the sources but are not listed
 in `mixins.hachimi.json` (same as the original jar): `sound.MixinSoundSystem`, `world.MixinEntityView`,
 `texture.MixinPlayerSkinProvider`, `accessor.AccessorUpdateBeaconC2SPacket`.
 

@@ -305,7 +305,6 @@ public abstract class MixinLivingEntity extends MixinEntity implements Globals {
          PlayerClimbEvent playerClimbEvent = new PlayerClimbEvent();
          EventBus.INSTANCE.dispatch(playerClimbEvent);
          if (playerClimbEvent.isCanceled()) {
-            System.out.println("Baritone has been removed");
             cir.setReturnValue(false);
          }
 

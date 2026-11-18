@@ -3,6 +3,7 @@ package net.hachimi.client.impl.gui.click.impl.config;
 import java.awt.Color;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import net.hachimi.client.api.Hideable;
 import net.hachimi.client.api.config.Config;
 import net.hachimi.client.api.macro.Macro;
 import net.hachimi.client.api.module.Module;
@@ -96,8 +97,8 @@ public class ModuleButton extends Button {
          this.hoverAnimation.setState(state);
       }
 
-      boolean b2 = SearchButton.SEARCH_TEXT != null && !SearchButton.SEARCH_TEXT.isEmpty();
-      boolean b1 = b2 && !this.getModule().getName().toLowerCase().contains(SearchButton.SEARCH_TEXT.toLowerCase());
+      boolean b2 = SearchButton.isSearching();
+      boolean b1 = b2 && !SearchButton.matches(this.module);
       int hoverAlpha = (int)((double)(b1 ? 20 : 45) * MathHelper.clamp(this.hoverAnimation.getFactor(), (double)0.0F, (double)1.0F));
       int hoverAlpha2 = (int)((double)(b1 ? 15 : 35) * MathHelper.clamp(this.hoverAnimation.getFactor(), (double)0.0F, (double)1.0F));
       int unfilledColor = ClickGuiModule.getInstance().fixTransparency((new Color(hoverAlpha, hoverAlpha, hoverAlpha + 10, 30 + hoverAlpha)).getRGB());
@@ -114,6 +115,12 @@ public class ModuleButton extends Button {
       }
 
       this.drawStringScaled(context, this.module.getName(), ix + 2.0F * ClickGuiModule.CLICK_GUI_SCALE, iy + 3.5F * ClickGuiModule.CLICK_GUI_SCALE, colorText);
+      String bind = this.getBindLabel();
+      if (bind != null) {
+         float bindX = ix + this.width * ClickGuiModule.CLICK_GUI_SCALE - 3.0F * ClickGuiModule.CLICK_GUI_SCALE - (float)RenderManager.textWidth(bind) * ClickGuiModule.CLICK_GUI_SCALE;
+         this.drawStringScaled(context, bind, bindX, iy + 3.5F * ClickGuiModule.CLICK_GUI_SCALE, b1 ? -11184811 : -7829368);
+      }
+
       if (this.settingsAnimation.getFactor() > (double)0.01F) {
          this.off = this.y + this.height * ClickGuiModule.CLICK_GUI_SCALE + ClickGuiModule.CLICK_GUI_SCALE;
          float fheight = 0.0F;
@@ -195,6 +202,12 @@ public class ModuleButton extends Button {
             if (button == 1) {
                this.open = !this.open;
                this.settingsAnimation.setState(this.open);
+            } else if (button == 2) {
+               Module var8 = this.module;
+               if (var8 instanceof Hideable) {
+                  Hideable hideable = (Hideable)var8;
+                  hideable.setHidden(!hideable.isHidden());
+               }
             }
          }
 
@@ -244,6 +257,35 @@ public class ModuleButton extends Button {
          }
       }
 
+   }
+
+   /**
+    * True when the search is in Hide mode and this module doesn't match it — the frame then skips
+    * the row entirely (no height, no rendering, no input).
+    */
+   public boolean isFilteredOut() {
+      return SearchButton.isSearching() && ClickGuiModule.getInstance().getSearchMode() == ClickGuiModule.SearchMode.HIDE && !SearchButton.matches(this.module);
+   }
+
+   /**
+    * The keybind shown on the right side of the row, or null when there is nothing to show.
+    */
+   private String getBindLabel() {
+      if (ClickGuiModule.getInstance().getBinds()) {
+         Module var2 = this.module;
+         if (var2 instanceof ToggleModule) {
+            ToggleModule toggleModule = (ToggleModule)var2;
+            Macro keybinding = toggleModule.getKeybinding();
+            if (keybinding != null && keybinding.getKeycode() != -1) {
+               String name = keybinding.getKeyName();
+               if (!name.equals("NONE")) {
+                  return name.length() > 6 ? name.substring(0, 6) : name;
+               }
+            }
+         }
+      }
+
+      return null;
    }
 
    public void offset(float in) {

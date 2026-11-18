@@ -6,6 +6,7 @@ import net.hachimi.client.api.config.setting.BooleanConfig;
 import net.hachimi.client.api.config.setting.MacroConfig;
 import net.hachimi.client.api.config.setting.ToggleConfig;
 import net.hachimi.client.api.macro.Macro;
+import net.hachimi.client.impl.module.client.NotificationsModule;
 import net.hachimi.client.util.chat.ChatUtil;
 import net.hachimi.client.util.render.animation.Animation;
 import net.hachimi.client.util.render.animation.Easing;
@@ -52,7 +53,8 @@ public class ToggleModule extends Module implements Hideable {
    public void enable() {
       this.enabledConfig.setValue(true);
       this.onEnable();
-      if ((Boolean)this.notifyConfig.getValue() && mc.world != null) {
+      boolean toast = NotificationsModule.onModuleToggle(this, true);
+      if ((Boolean)this.notifyConfig.getValue() && mc.world != null && !toast) {
          ChatUtil.clientSendMessage("§a[+] §f" + this.getName(), this.hashCode());
       }
 
@@ -61,7 +63,8 @@ public class ToggleModule extends Module implements Hideable {
    public void disable() {
       this.enabledConfig.setValue(false);
       this.onDisable();
-      if ((Boolean)this.notifyConfig.getValue() && mc.world != null) {
+      boolean toast = NotificationsModule.onModuleToggle(this, false);
+      if ((Boolean)this.notifyConfig.getValue() && mc.world != null && !toast) {
          ChatUtil.clientSendMessage("§c[-] §f" + this.getName(), this.hashCode());
       }
 

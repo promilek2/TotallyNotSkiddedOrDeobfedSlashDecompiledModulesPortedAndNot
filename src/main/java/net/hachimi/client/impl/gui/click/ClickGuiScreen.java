@@ -3,6 +3,8 @@ package net.hachimi.client.impl.gui.click;
 import java.awt.Color;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import net.hachimi.client.api.Hideable;
+import net.hachimi.client.api.module.Module;
 import net.hachimi.client.api.module.ModuleCategory;
 import net.hachimi.client.api.render.RenderManager;
 import net.hachimi.client.impl.gui.click.component.ScissorStack;
@@ -65,8 +67,20 @@ public class ClickGuiScreen extends Screen implements Globals {
          frame.render(context, (float)mouseX, (float)mouseY, delta);
 
          for(ModuleButton moduleButton : frame.getModuleButtons()) {
+            if (moduleButton.isFilteredOut()) {
+               continue;
+            }
+
             if (moduleButton.isWithin((float)mouseX, (float)mouseY)) {
                this.text = moduleButton.getModule().getDescription();
+               Module hovered = moduleButton.getModule();
+               if (hovered instanceof Hideable) {
+                  Hideable hideable = (Hideable)hovered;
+                  if (!hideable.isHidden()) {
+                     this.text = this.text + " [shown in arraylist]";
+                  }
+               }
+
                hovering = true;
                break;
             }
@@ -92,8 +106,17 @@ public class ClickGuiScreen extends Screen implements Globals {
             int width = RenderManager.textWidth(this.text);
             int hoverAlpha = (int)((double)60.0F * this.animation.getFactor());
             int unfilledColor = ClickGuiModule.getInstance().fixTransparency((new Color(0, 0, 0, 50 + hoverAlpha)).getRGB());
-            RenderManager.rect(context.getMatrices(), (double)(((float)mouseX + 10.0F) * j), (double)(((float)mouseY - 8.0F) * j), (double)((float)width + 4.0F), (double)(((float)RenderManager.textHeight() + 2.0F) * j), unfilledColor);
-            RenderManager.renderText(context, this.text, ((float)mouseX + 12.0F) * j, ((float)mouseY - 6.0F) * j, ColorUtil.fixTransparency(-1, (float)this.animation.getFactor()));
+            float boxWidth = ((float)width + 4.0F) * ClickGuiModule.CLICK_GUI_SCALE;
+            float boxHeight = ((float)RenderManager.textHeight() + 2.0F) * ClickGuiModule.CLICK_GUI_SCALE;
+            float boxX = (float)mouseX + 10.0F;
+            float boxY = (float)mouseY - 8.0F;
+            if (boxX + boxWidth > (float)this.width) {
+               boxX = Math.max(0.0F, (float)mouseX - 6.0F - boxWidth);
+            }
+
+            boxY = MathHelper.clamp(boxY, 0.0F, Math.max(0.0F, (float)this.height - boxHeight));
+            RenderManager.rect(context.getMatrices(), (double)(boxX * j), (double)(boxY * j), (double)((float)width + 4.0F), (double)((float)RenderManager.textHeight() + 2.0F), unfilledColor);
+            RenderManager.renderText(context, this.text, (boxX + 2.0F) * j, (boxY + 2.0F) * j, ColorUtil.fixTransparency(-1, (float)this.animation.getFactor()));
             context.getMatrices().scale(j, j, 0.0F);
          }
       }
@@ -135,7 +158,13 @@ public class ClickGuiScreen extends Screen implements Globals {
    }
 
    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+      boolean onlyHovered = ClickGuiModule.getInstance().getScrollHovered() && !Screen.hasShiftDown();
+
       for(CategoryFrame frame : this.frames) {
+         if (onlyHovered && !frame.isWithinTotal((float)mouseX, (float)mouseY)) {
+            continue;
+         }
+
          float scrolledY = (float)((double)frame.getY() + verticalAmount * (double)ClickGuiModule.getInstance().getScrollSpeed());
          scrolledY = MathHelper.clamp(scrolledY, -(frame.getTotalHeight() - 10.0F), 15.0F);
          frame.setPos(frame.getX(), scrolledY);
@@ -145,7 +174,14 @@ public class ClickGuiScreen extends Screen implements Globals {
    }
 
    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-      if (keyCode == 82 && (modifiers & 2) != 0) {
+      if (keyCode == 70 && (modifiers & 2) != 0) {
+         for(CategoryFrame frame : this.frames) {
+            if (frame.getSearchButton() != null) {
+               frame.getSearchButton().startTyping();
+            }
+         }
+
+         return true;
       }
 
       this.shouldCloseOnEsc = true;
@@ -231,10 +267,12 @@ public class ClickGuiScreen extends Screen implements Globals {
       RenderManager.rect(context.getMatrices(), (double)0.0F, (double)0.0F, (double)context.getScaledWindowWidth(), (double)context.getScaledWindowHeight(), backgroundColor);
       float currentProgress = ClickGuiModule.getInstance().getScaleFactor();
       if (currentProgress != 1.0F) {
-         context.getMatrices().translate((float)context.getScaledWindowHeight(), (float)context.getScaledWindowHeight() / 2.0F, 0.0F);
+         float centerX = (float)context.getScaledWindowWidth() / 2.0F;
+         float centerY = (float)context.getScaledWindowHeight() / 2.0F;
+         context.getMatrices().translate(centerX, centerY, 0.0F);
          float goal = currentProgress * 0.2F;
-         context.getMatrices().scale(0.8F + goal, 0.8F + goal, 0.0F);
-         context.getMatrices().translate((float)(-context.getScaledWindowHeight()), (float)(-context.getScaledWindowHeight()) / 2.0F, 0.0F);
+         context.getMatrices().scale(0.8F + goal, 0.8F + goal, 1.0F);
+         context.getMatrices().translate(-centerX, -centerY, 0.0F);
       }
    }
 

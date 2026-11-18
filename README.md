@@ -127,7 +127,7 @@ ChorusInvincibility, XCarry, InventorySync, MaceSpoof, NewChunks, NoMineAnimatio
 
 ### Movement
 Speed, Flight, ElytraFly, BoatFly, TridentFly, FakeFly, Velocity, Step, LongJump, Parkour, SafeWalk, Jesus, IceSpeed,
-NoSlow, NoFall, NoJumpDelay, NoAccel, FastFall, FastSwim, Sprint, AutoWalk, EntitySpeed, EntityControl, Follower,
+AutoElytra, NoClimb, NoSlow, NoFall, NoJumpDelay, NoAccel, FastFall, FastSwim, Sprint, AutoWalk, EntitySpeed, EntityControl, Follower,
 FireworkBoost, TickShift, FakeLag, AntiLevitation, Yaw
 
 ### Render
@@ -169,7 +169,20 @@ HUD, CombatHud, ClickGui, Colors, Font, Socials, Rotations, Chat, Anticheat, RPC
   (no `[+]/[-]` chat spam while enabled)
 - `Keystrokes` — W/A/S/D, LMB/RMB with CPS and space, press animation in the client colour; `X`, `Y`, `Size`
 
+**Ported from Homovore** ([piolunson/mohovore](https://github.com/piolunson/mohovore), MC 1.21.11) —
+rewritten on Hachimi's APIs (`ToggleModule`/`RotationModule`, `Config`, `@EventListener`, `Managers.*`):
+- `EndermanLook` (Misc) — never provokes endermen (server-side pitch down when you'd stare), optionally
+  stares at angry ones to freeze them; `AT` mode stares at calm ones on purpose
+- `NoClimb` (Movement) — scaffolding (and optionally ladders/vines) stops pulling you up; uses the existing
+  `PlayerClimbEvent`
+- `FastPortal` (Misc) — throws a hotbar pearl into the portal your head is in; `Cooldown`
+- `SoundBlocker` (Misc) — presets (Explosions, Totems, Portals, Thunder, Bosses) + `Custom` comma-separated ids
+- `AutoElytra` (Movement) — equips an elytra, jumps and opens it, fires hotbar rockets every `RocketDelay`
+  ticks, swaps the chestplate back on disable when you're on the ground
+
 **Fixes**
+- `MixinLivingEntity#hookIsClimbing` printed "Baritone has been removed" to stdout every tick the event was
+  cancelled
 - `sounds.json` pointed at the `hachimi:` namespace while the files live in `assets/hachimiclient/` — GUI sounds
   were silent
 - `Fonts.setSize` opened the default font with `FileInputStream("assets/...")`, which always failed, so changing

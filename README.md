@@ -9,8 +9,8 @@ This repository holds the **client sources** (`src/main/java`), remapped from in
 ---
 
 ## Current errors
-some fonts errors and sounds im working on it
-the built jar is outdated and not usable
+- the built jar is outdated and not usable — build from source (`./gradlew build`, see [Building](#building))
+- fixed: GUI sounds (wrong namespace in `sounds.json`) and font resizing / custom font loading (`Fonts`)
 
 ## Requirements
 
@@ -32,6 +32,10 @@ the built jar is outdated and not usable
 ## Controls
 
 - **ClickGUI** — bound to the `ClickGui` module key by default (Client category, rebindable).
+  - left click a module — toggle, right click — settings, **middle click — show/hide in the arraylist**
+  - right click a panel header — collapse, drag the header — move (panels stay on screen)
+  - **Ctrl+F** — focus search; Enter keeps the filter, Esc clears it, right click on the box clears it
+  - scroll scrolls the panel under the cursor (hold **Shift** to scroll all panels)
 - **Commands** — prefix `.` (e.g. `.help`). The prefix and its key are changed with `.prefix`.
 - In game, `.help` prints the current command list with descriptions.
 
@@ -141,7 +145,35 @@ AutoFrameDupe, BetterChat, ChatNotifier, ExtraTab, FakePlayer, Kit, MiddleClick,
 Server, Shulkerception, SkinBlink, Spammer, Swing, TrueDurability
 
 ### Client
-HUD, CombatHud, ClickGui, Colors, Font, Socials, Rotations, Chat, Anticheat, RPC
+HUD, CombatHud, ClickGui, Colors, Font, Socials, Rotations, Chat, Anticheat, RPC, **Keystrokes**, **Notifications**
+
+---
+
+## Changelog (ui-overhaul)
+
+**ClickGUI**
+- panel headers show `enabled/total` (or `matches/total` while searching) — `Counters`
+- module rows show their keybind on the right — `Binds`
+- search matches names **and descriptions**, keeps the filter after you click a module, shows the match count,
+  and can hide non-matching rows instead of greying them out — `SearchMode` (Dim / Hide)
+- Ctrl+F focuses the search box, Ctrl+Backspace clears it, spaces can be typed
+- middle click toggles a module's arraylist visibility; the tooltip says when a module is shown in the arraylist
+- description tooltip stays inside the screen (flips left at the right edge) and scales with the GUI scale
+- scroll only moves the hovered panel — `ScrollHovered` (Shift = all panels)
+- open/close zoom animation now scales from the screen centre (it used the height for the X pivot)
+- dragged panels are clamped to the screen
+
+**New modules (Client)**
+- `Notifications` — toasts for module toggles (and `NotificationsModule.getInstance().push(...)` for anything
+  else): slide animation, accent bar, lifetime bar; `Position`, `Duration`, `Max`, `YOffset`, `ReplaceChat`
+  (no `[+]/[-]` chat spam while enabled)
+- `Keystrokes` — W/A/S/D, LMB/RMB with CPS and space, press animation in the client colour; `X`, `Y`, `Size`
+
+**Fixes**
+- `sounds.json` pointed at the `hachimi:` namespace while the files live in `assets/hachimiclient/` — GUI sounds
+  were silent
+- `Fonts.setSize` opened the default font with `FileInputStream("assets/...")`, which always failed, so changing
+  the font size did nothing; `closeFonts` crashed when the font failed to load
 
 ---
 
@@ -184,10 +216,19 @@ src/main/java/meteordevelopment/...   Discord IPC library used by the RPC module
 
 ## Building
 
-This repository does not include a build setup — to produce a jar you need to wire these sources into Fabric
-Loom for MC 1.21.1 with `net.fabricmc:yarn:1.21.1+build.3:v2` mappings and Fabric API `0.116.9+1.21.1`.
-The client relies on an access widener (access to Minecraft fields and methods), so a build without one will
-not compile.
+The repo now has a Loom setup (`build.gradle`, wrapper, `src/main/resources` with `fabric.mod.json`,
+`mixins.hachimi.json`, the access widener remapped to Yarn names, and the assets from the original jar):
+
+```bash
+./gradlew build          # -> build/libs/Hachimi-2.1.jar
+./gradlew runClient      # dev client
+```
+
+Versions are in `gradle.properties` (MC 1.21.1, Yarn `1.21.1+build.3`, Loom 1.9.2, Fabric API `0.116.9+1.21.1`,
+Gradle 8.14.3, Java 21). Two access-widener entries from the original jar (`method_4212`, `method_4217` on
+`PlayerEntityRenderer`) don't exist in 1.21.1 and were dropped. Four mixins exist in the sources but are not listed
+in `mixins.hachimi.json` (same as the original jar): `sound.MixinSoundSystem`, `world.MixinEntityView`,
+`texture.MixinPlayerSkinProvider`, `accessor.AccessorUpdateBeaconC2SPacket`.
 
 ---
 

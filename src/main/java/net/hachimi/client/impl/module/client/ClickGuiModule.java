@@ -3,6 +3,7 @@ package net.hachimi.client.impl.module.client;
 import net.hachimi.client.Hachimi;
 import net.hachimi.client.api.config.Config;
 import net.hachimi.client.api.config.setting.BooleanConfig;
+import net.hachimi.client.api.config.setting.EnumConfig;
 import net.hachimi.client.api.config.setting.NumberConfig;
 import net.hachimi.client.api.module.ModuleCategory;
 import net.hachimi.client.api.module.ToggleModule;
@@ -20,6 +21,10 @@ public class ClickGuiModule extends ToggleModule {
    Config<Integer> scrollSpeedConfig = this.register(new NumberConfig("ScrollSpeed", "The speed of GUI scrolling", 5, 30, 100));
    Config<Boolean> soundsConfig = this.register(new BooleanConfig("Sounds", "Click sounds", true));
    Config<Boolean> descriptionsConfig = this.register(new BooleanConfig("Descriptions", "Shows feature descriptions", true));
+   Config<Boolean> bindsConfig = this.register(new BooleanConfig("Binds", "Shows each module's keybind on the right side of its row", true));
+   Config<Boolean> countersConfig = this.register(new BooleanConfig("Counters", "Shows the enabled/total module count in each panel header", true));
+   Config<SearchMode> searchModeConfig = this.register(new EnumConfig("SearchMode", "Dim greys out modules that don't match the search, Hide removes them from the panels", ClickGuiModule.SearchMode.HIDE, ClickGuiModule.SearchMode.values()));
+   Config<Boolean> scrollHoveredConfig = this.register(new BooleanConfig("ScrollHovered", "Scrolls only the panel under the cursor (hold shift to scroll every panel)", true));
    public static ClickGuiScreen CLICK_GUI_SCREEN;
    public static float CLICK_GUI_SCALE = 1.0F;
    private final Animation openCloseAnimation;
@@ -131,5 +136,26 @@ public class ClickGuiModule extends ToggleModule {
 
    public int getScrollSpeed() {
       return (Integer)this.scrollSpeedConfig.getValue();
+   }
+
+   public boolean getBinds() {
+      return (Boolean)this.bindsConfig.getValue();
+   }
+
+   public boolean getCounters() {
+      return (Boolean)this.countersConfig.getValue();
+   }
+
+   public SearchMode getSearchMode() {
+      return (SearchMode)this.searchModeConfig.getValue();
+   }
+
+   public boolean getScrollHovered() {
+      return (Boolean)this.scrollHoveredConfig.getValue();
+   }
+
+   public static enum SearchMode {
+      DIM,
+      HIDE;
    }
 }

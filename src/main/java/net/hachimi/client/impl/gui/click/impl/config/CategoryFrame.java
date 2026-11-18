@@ -7,6 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import net.hachimi.client.api.config.Serializable;
 import net.hachimi.client.api.module.Module;
 import net.hachimi.client.api.module.ModuleCategory;
+import net.hachimi.client.api.module.ToggleModule;
 import net.hachimi.client.api.render.RenderManager;
 import net.hachimi.client.api.render.satin.ManagedShaderEffect;
 import net.hachimi.client.impl.gui.click.ClickGuiScreen;
@@ -21,6 +22,7 @@ import net.hachimi.client.util.render.animation.Animation;
 import net.hachimi.client.util.render.animation.Easing;
 import net.hachimi.client.util.string.EnumFormatter;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.util.math.MathHelper;
 
 public class CategoryFrame extends Frame implements Serializable<CategoryFrame> {
    private final String name;
@@ -62,6 +64,10 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
       if (this.drag) {
          this.x += (float)ClickGuiScreen.MOUSE_X - this.px;
          this.y += (float)ClickGuiScreen.MOUSE_Y - this.py;
+         int screenWidth = mc.getWindow().getScaledWidth();
+         int screenHeight = mc.getWindow().getScaledHeight();
+         this.x = MathHelper.clamp(this.x, 0.0F, Math.max(0.0F, (float)screenWidth - this.width * ClickGuiModule.CLICK_GUI_SCALE));
+         this.y = Math.min(this.y, Math.max(0.0F, (float)screenHeight - this.height * ClickGuiModule.CLICK_GUI_SCALE));
       }
 
       this.fheight = 2.0F * ClickGuiModule.CLICK_GUI_SCALE;
@@ -70,6 +76,10 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
       }
 
       for(ModuleButton moduleButton : this.moduleButtons) {
+         if (moduleButton.isFilteredOut()) {
+            continue;
+         }
+
          this.fheight += moduleButton.getHeight() + ClickGuiModule.CLICK_GUI_SCALE;
          if (!(moduleButton.getScaledTime() < 0.01F)) {
             this.fheight += 3.0F * ClickGuiModule.CLICK_GUI_SCALE * moduleButton.getScaledTime();
@@ -93,6 +103,11 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
       this.fill(context, (double)this.x, (double)(this.y + (this.height - 1.0F) * ClickGuiModule.CLICK_GUI_SCALE), (double)(this.width * ClickGuiModule.CLICK_GUI_SCALE), (double)ClickGuiModule.CLICK_GUI_SCALE, ClickGuiModule.getInstance().getColor(80));
       int whiteText = -1;
       this.drawStringScaled(context, this.name, this.x + 6.0F * ClickGuiModule.CLICK_GUI_SCALE, this.y + 4.0F * ClickGuiModule.CLICK_GUI_SCALE, whiteText);
+      if (ClickGuiModule.getInstance().getCounters()) {
+         String counter = this.getCounterText();
+         float counterX = this.x + this.width * ClickGuiModule.CLICK_GUI_SCALE - 4.0F * ClickGuiModule.CLICK_GUI_SCALE - (float)RenderManager.textWidth(counter) * ClickGuiModule.CLICK_GUI_SCALE;
+         this.drawStringScaled(context, counter, counterX, this.y + 4.0F * ClickGuiModule.CLICK_GUI_SCALE, -7829368);
+      }
       if (this.categoryAnimation.getFactor() > (double)0.01F) {
          boolean canScissor = ClickGuiModule.getInstance().getScaleFactor() == 1.0F;
          float y1 = this.y;
@@ -130,6 +145,10 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
          this.inner = this.off;
 
          for(ModuleButton moduleButton : this.moduleButtons) {
+            if (moduleButton.isFilteredOut()) {
+               continue;
+            }
+
             moduleButton.render(context, this.x + ClickGuiModule.CLICK_GUI_SCALE, this.inner + ClickGuiModule.CLICK_GUI_SCALE, mouseX, mouseY, delta);
             this.off += (float)((double)(moduleButton.getHeight() + ClickGuiModule.CLICK_GUI_SCALE) * this.categoryAnimation.getFactor());
             this.inner += moduleButton.getHeight() + ClickGuiModule.CLICK_GUI_SCALE;
@@ -156,6 +175,10 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
 
       if (this.isOpen()) {
          for(ModuleButton button : this.moduleButtons) {
+            if (button.isFilteredOut()) {
+               continue;
+            }
+
             button.mouseClicked(mouseX, mouseY, mouseButton);
          }
       }
@@ -171,6 +194,10 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
       this.drag = false;
       if (this.isOpen()) {
          for(ModuleButton button : this.moduleButtons) {
+            if (button.isFilteredOut()) {
+               continue;
+            }
+
             button.mouseReleased(mouseX, mouseY, mouseButton);
          }
       }
@@ -185,6 +212,10 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
       super.keyPressed(keyCode, scanCode, modifiers);
       if (this.isOpen()) {
          for(ModuleButton button : this.moduleButtons) {
+            if (button.isFilteredOut()) {
+               continue;
+            }
+
             button.keyPressed(keyCode, scanCode, modifiers);
          }
       }
@@ -199,6 +230,10 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
       super.charTyped(character, modifiers);
       if (this.isOpen()) {
          for(ModuleButton button : this.moduleButtons) {
+            if (button.isFilteredOut()) {
+               continue;
+            }
+
             button.charTyped(character, modifiers);
          }
       }
@@ -228,6 +263,32 @@ public class CategoryFrame extends Frame implements Serializable<CategoryFrame> 
       }
 
       return null;
+   }
+
+   /**
+    * "enabled/total" for the header, or "matches/total" while a search is active.
+    */
+   private String getCounterText() {
+      int total = this.moduleButtons.size();
+      int count = 0;
+
+      for(ModuleButton moduleButton : this.moduleButtons) {
+         if (SearchButton.isSearching()) {
+            if (SearchButton.matches(moduleButton.getModule())) {
+               ++count;
+            }
+         } else {
+            Module module = moduleButton.getModule();
+            if (module instanceof ToggleModule) {
+               ToggleModule toggleModule = (ToggleModule)module;
+               if (toggleModule.isEnabled()) {
+                  ++count;
+               }
+            }
+         }
+      }
+
+      return count + "/" + total;
    }
 
    public boolean isWithinTotal(float mx, float my) {
